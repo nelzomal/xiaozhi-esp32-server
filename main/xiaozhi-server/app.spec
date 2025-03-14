@@ -52,18 +52,40 @@ if os.path.exists(asr_model_dir):
 else:
     print(f"Warning: ASR model directory not found at {asr_model_dir}")
 
+# Get Silero VAD model files
+vad_files = []
+vad_model_dir = 'models/snakers4_silero-vad'  # Silero VAD model path
+if os.path.exists(vad_model_dir):
+    print(f"Found VAD model directory: {vad_model_dir}")
+    for root, dirs, files in os.walk(vad_model_dir):
+        for file in files:
+            full_path = os.path.join(root, file)
+            # Keep the models directory structure
+            rel_path = os.path.dirname(os.path.relpath(full_path, '.'))
+            print(f"Adding VAD file: {full_path} -> {rel_path}")
+            vad_files.append((full_path, rel_path))
+else:
+    print(f"Warning: VAD model directory not found at {vad_model_dir}")
+
 # Get FunASR source files path
 funasr_base_path = '/opt/homebrew/Caskroom/miniconda/base/envs/xiaozhi-esp32-server/lib/python3.10/site-packages/funasr'
 
 a = Analysis(
-    ['app.py'],
+    ['launcher.py'],
     pathex=[],
     binaries=opus_binaries + collected_opus_libs,
     datas=[
         # Copy config.yaml to root directory
         ('config.yaml', '.'),
+        # Add Config files
+        ('config/logger.py', 'config'),
+        ('config/settings.py', 'config'),
+        ('config/private_config.py', 'config'),
+        ('config/functionCallConfig.py', 'config'),
         # Add ASR related files
         ('core/providers/asr/fun_local.py', 'core/providers/asr'),
+        ('core/providers/asr/base.py', 'core/providers/asr'),
+        ('core/providers/asr/doubao.py', 'core/providers/asr'),
         # Add LLM related files
         ('core/providers/llm', 'core/providers/llm'),
         # Add TTS related files
@@ -72,10 +94,35 @@ a = Analysis(
         ('core/providers/memory', 'core/providers/memory'),
         # Add Intent related files
         ('core/providers/intent', 'core/providers/intent'),
+        # Add Utility files
+        ('core/utils/asr.py', 'core/utils'),
+        ('core/utils/llm.py', 'core/utils'),
+        ('core/utils/tts.py', 'core/utils'),
+        ('core/utils/memory.py', 'core/utils'),
+        ('core/utils/intent.py', 'core/utils'),
+        ('core/utils/vad.py', 'core/utils'),
+        ('core/utils/util.py', 'core/utils'),
+        ('core/utils/lock_manager.py', 'core/utils'),
+        ('core/utils/p3.py', 'core/utils'),
+        ('core/utils/auth_code_gen.py', 'core/utils'),
+        ('core/utils/dialogue.py', 'core/utils'),
+        # Add Core files
+        ('core/websocket_server.py', 'core'),
+        ('core/connection.py', 'core'),
+        ('core/auth.py', 'core'),
+        # Add Handle files
+        ('core/handle/textHandle.py', 'core/handle'),
+        ('core/handle/abortHandle.py', 'core/handle'),
+        ('core/handle/helloHandle.py', 'core/handle'),
+        ('core/handle/intentHandler.py', 'core/handle'),
+        ('core/handle/iotHandle.py', 'core/handle'),
+        ('core/handle/musicHandler.py', 'core/handle'),
+        ('core/handle/receiveAudioHandle.py', 'core/handle'),
+        ('core/handle/sendAudioHandle.py', 'core/handle'),
         # Add source files for inspection
         (os.path.join(funasr_base_path, 'models/sense_voice/model.py'), 'funasr/models/sense_voice'),
         (os.path.join(funasr_base_path, 'models/specaug/specaug.py'), 'funasr/models/specaug'),
-    ] + opus_datas + asr_files + funasr_datas,
+    ] + opus_datas + asr_files + vad_files + funasr_datas,
     hiddenimports=[
         # Add ASR related imports
         'core.providers.asr.fun_local',
